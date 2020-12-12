@@ -66,7 +66,7 @@ void Seq_dump(SequentialData voice);
 
 /*
  * Given packed data (for example, the data that would come directly from a
- * Sequential instrument's system exclusive dump), unpack() returns an 
+ * Sequential instrument's system exclusive dump), Seq_unpack() returns an 
  * UnpackedData, whose data property contains a one-byte-per-parameter 
  * representation of the data.  The UnpackedData will be an easy way to examine, 
  * manipulate, and modify data.
@@ -111,20 +111,20 @@ UnpackedData Seq_unpack(PackedData packed)
 
 /*
  * Given unpacked data (for example, data that might be modified or created by
- * calling software), pack() returns a PackedData, whose data property contains 
+ * calling software), Seq_pack() returns a PackedData, whose data contains 
  * a packed representation of the data.  The PackedData is suitable for sending 
  * back to a Sequential instrument.  To send the packed data back via a file or 
- * direct I/O call, see dump(); or roll your own I/O to MIDI.  Don't forget the
- * appropriate system exclusive header.
+ * direct I/O call, see Seq_dump(); or roll your own I/O to MIDI.  Don't forget
+ * the appropriate system exclusive header.
  * 
  * Example:
  *
- *   (Let's continue the example from unpack() above, by opening the filter all 
+ *   (Let's continue the example from Seq_unpack() by opening the filter all 
  *    the way. As you may recall, mopho_voice_data is an UnpackedData)
  *   mopho_voice.value[20] = 164;
  *   PackedData mopho_sysex = Seq_pack(mopho_voice);
  */
-PackedData pack(UnpackedData unpacked)
+PackedData Seq_pack(UnpackedData unpacked)
 {
     unsigned int values[SEQUENTIAL_DATA_MAX];
     int packbyte = 0;  /* Composite of high bits of next 7 bytes */
@@ -170,8 +170,8 @@ PackedData pack(UnpackedData unpacked)
  *   UnpackedData voice;
  *   Seq_set(&voice, size, data);
  *
- * Now you can access the individual parameters with voice.data[index].  See 
- * dump() below for a really simple example of this.
+ * Now you can access the individual parameters with voice.data[index].  See
+ * Seq_dump() below for a really simple example of this.
  */
 void Seq_set(SequentialData *data, int size, unsigned int values[])
 {
