@@ -183,7 +183,8 @@ void wavetable_sysex_dump(Wavetable *table, int num, char *name)
     putchar(0x01);
     putchar(0x6b);
     putchar(num);
-    for (i = 0; i < 8; i++) putchar(name[i]); /* Wavetable name */
+    while (strlen(name) < 8) strcat(name, " "); /* Enforce 8 characters */
+    printf("%.8s", name);
     putchar(0x00);
     Seq_dump(pro3_sysex);
     putchar((char) (checksum & 0x7f));
