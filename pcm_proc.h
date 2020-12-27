@@ -25,7 +25,11 @@
      * 
      * pcm_morph() generates a waveform that's a point in the interpolation from one waveform to
      * another.
-     *
+     * 
+     * pcm_gen_saw() generates a 1024-sample sawtooth waveform
+     * 
+     * pcm_gen_square() generates a 1024-sample square waveform
+     * 
      * Please see the bottom for boring license information.
      */
 
@@ -67,6 +71,8 @@
     PCMData pcm_clone(PCMData *pcm);
     void set_pcm_data(PCMData *pcm, pcm_size_t size, pcm_sample_t data[]);
     PCMData pcm_morph(PCMData *low, PCMData *high, float scale);
+    PCMData pcm_gen_saw();
+    PCMData pcm_gen_square();
 
     /* Sets initial data for a PCMData struct */
     PCMData new_PCMData()
@@ -405,20 +411,55 @@
     /* Returns a PCM waveform that is a partial morph between the start PCM
      * wave and the end PCM wave, at the specified scale from >0 to <1
      */
-    PCMData pcm_morph(PCMData *low, PCMData *high, float scale)
+    PCMData pcm_morph(PCMData *start, PCMData *end, float scale)
     {
         PCMData morphed = new_PCMData();
 
         pcm_sample_t pcm_data[PCM_PROC_MAX];
-        for (int i = 0; i < (low->resolution * low->size); i++)
+        pcm_index_t i;
+        for (i = 0; i < start->size; i++)
         {
-            float diff = high->data[i] - low->data[i]; /* PCM steps from start to end points */
-            float v = low->data[i] + (diff * scale);
+            float diff = end->data[i] - start->data[i]; /* PCM steps from start to end points */
+            float v = start->data[i] + (diff * scale);
             pcm_data[i] = (pcm_sample_t) v; /* Cast to sample and set data point */
         }
-        set_pcm_data(&morphed, low->size, pcm_data);
+        set_pcm_data(&morphed, start->size, pcm_data);
 
         return morphed;
+    }
+
+    PCMData pcm_gen_saw()
+    {
+        pcm_sample_t data[PCM_PROC_MAX];
+
+        pcm_index_t i;
+        for (i = 0; i < 512; i++)
+        {
+            data[i] = (pcm_sample_t) (i * 64);
+            data[i+512] = (pcm_sample_t) (i * 64 - 32768);
+        }
+
+        PCMData saw = new_PCMData();
+        set_pcm_data(&saw, 1024, data);
+
+        return saw;
+    }
+
+    PCMData pcm_gen_square()
+    {
+        pcm_sample_t data[PCM_PROC_MAX];
+
+        pcm_index_t i;
+        for (i = 0; i < 512; i++)
+        {
+            data[i] = (pcm_sample_t) 32767;
+            data[i+512] = (pcm_sample_t) -32768;
+        }
+
+        PCMData saw = new_PCMData();
+        set_pcm_data(&saw, 1024, data);
+
+        return saw;
     }
 
     #endif /* PCM_PROC_H_ */
