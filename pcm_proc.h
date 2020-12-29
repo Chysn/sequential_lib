@@ -36,7 +36,7 @@
     #ifndef PCM_PROC_H_
     #include <stdlib.h>
     #define PCM_PROC_H_
-    #define PCM_PROC_MAX 128000
+    #define PCM_PROC_MAX 131072
     #define PCM_PROC_CHANNEL_LEFT 0
     #define PCM_PROC_CHANNEL_RIGHT 1
 
