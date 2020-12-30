@@ -7,7 +7,7 @@
 s */
 #include "sequential_packing.h"
 #include "pcm_proc.h"
-#define PCM_MAX 176400
+#define PCM_MAX 176000
 #define PRO3_SAMPLE_SIZE 1024
 #define PRO3_WAVES 16
 
@@ -28,10 +28,12 @@ void wavetable_pcm_dump(Wavetable *table);
 Wavetable new_Wavetable() 
 {
     Wavetable table;
-    for (int i = 0; i < PRO3_WAVES; i++) 
+    int i;
+    for (i = 0; i < PRO3_WAVES; i++) 
     {
         table.isset[i] = 0;
-        for (int j = 0; j < PRO3_SAMPLE_SIZE; j++) table.ref[i][j] = 0;
+        int j;
+        for (j = 0; j < PRO3_SAMPLE_SIZE; j++) table.ref[i][j] = 0;
     }
     return table;
 }
@@ -44,7 +46,8 @@ void set_reference(Wavetable *table, PCMData *reference, int num)
     PCMData clone = pcm_clone(reference);
     if (clone.size != PRO3_SAMPLE_SIZE) pcm_change_size(&clone, PRO3_SAMPLE_SIZE);
     if (clone.resolution != 16) pcm_change_resolution(&clone, 16);
-    for (int i = 0; i < PRO3_SAMPLE_SIZE; i++)
+    int i;
+    for (i = 0; i < PRO3_SAMPLE_SIZE; i++)
     {
         table->ref[num][i] = clone.data[i];
     }
@@ -62,28 +65,33 @@ void wavetable_fill(Wavetable *table)
 
     /* If the last waveform isn't set, fill the last position with the first wave */
     if (table->isset[PRO3_WAVES - 1] == 0) {
-        for (int i  = 0; i < PRO3_SAMPLE_SIZE; i++)
+        int i;
+        for (i  = 0; i < PRO3_SAMPLE_SIZE; i++)
         {
             table->ref[PRO3_WAVES - 1][i] = table->ref[0][i];
         }
         table->isset[PRO3_WAVES - 1] = 1;
     }
 
-    for (int c = 1; c < 16; c++) /* c = current index */
+    int c;
+    for (c = 1; c < 16; c++) /* c = current index */
     {
         if (table->isset[c] == 0) {
             /* There's no waveform here, so it needs to be filled */
-            for (int n = c; n < 16; n++) /* n = next index */
+            int n;
+            for (n = c; n < 16; n++) /* n = next index */
             {
                 if (table->isset[n] == 1) {
                     /* This is the next set waveform with data, so fill every waveform
                      * between the current one and this one */
-                    for (int t = c; t < n; t++) /* t = target index */
+                    int t;
+                    for (t = c; t < n; t++) /* t = target index */
                     {
                         float div = n - c; /* Number of reference waves in range */
                         float ix = t - c + 1; /* Index of target within the range */
                         float scale = ix / div;
-                        for (int i = 0; i < PRO3_SAMPLE_SIZE; i++)
+                        int i;
+                        for (i = 0; i < PRO3_SAMPLE_SIZE; i++)
                         {
                             float pcm_diff = table->ref[n][i] - table->ref[c-1][i];
                             float v = table->ref[c-1][i] + (pcm_diff * scale);
@@ -111,12 +119,12 @@ void wavetable_sysex_dump(Wavetable *table, int num, char *name)
     unsigned long int dx = 0; /* dx is the index within the Pro 3 data */    
     uint16_t checksum = 0;
     
-    for (int k = 0; k < 16; k++)
+    int k;
+    for (k = 0; k < 16; k++)
     {
 	    PCMData pcm = new_PCMData();
         set_pcm_data(&pcm, PRO3_SAMPLE_SIZE, table->ref[k]);
 	    
-	    int i;
 	    for (i = 0; i < pcm.size; i++)
 	    {
 	    	int16_t sample = (int16_t)pcm.data[i];
@@ -194,9 +202,11 @@ void wavetable_sysex_dump(Wavetable *table, int num, char *name)
 
 void wavetable_pcm_dump(Wavetable *table)
 {
-    for (int r = 0; r < PRO3_WAVES; r++)
+    int r;
+    for (r = 0; r < PRO3_WAVES; r++)
     {
-        for (int s = 0; s < PRO3_SAMPLE_SIZE; s++)
+        int s;
+        for (s = 0; s < PRO3_SAMPLE_SIZE; s++)
         {
             pcm_sample_t sample = table->ref[r][s];
 

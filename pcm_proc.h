@@ -5,10 +5,14 @@
      *
      * new_PCMData() creates a PCMData struct and initializes the data to default values.
      *
-     * wav_to_pcm() extracts PCM data and metadata from a WAV file and returns a PCMData struct.
+     * get_wav_meta() parses PCM data and metadata from a WAV file and returns a WAVData struct.
+     * 
+     * wav_to_pcm() parses PCM data and metadata from a WAV file and returns a PCMData struct.
      *
+     * wav_extract() extracts data from a portion of a WAV file and returns a PCMData struct.
+     * 
      * pcm_change_resolution() changes the resolution of PCM data (resolutions up to 32-bit signed
-     * PCM are supported).
+     *     PCM are supported).
      *
      * pcm_change_size() changes the size of PCM data.
      *
@@ -21,10 +25,10 @@
      * pcm_clone() copies the PCMData struct and returns the copy.
      *
      * set_pcm_data() is a shortcut for putting a data array into a PCMData struct, given its size
-     * per channel and the data array.
+     *     per channel and the data array.
      * 
      * pcm_morph() generates a waveform that's a point in the interpolation from one waveform to
-     * another.
+     *     another.
      * 
      * pcm_gen_saw() generates a 1024-sample sawtooth waveform
      * 
@@ -60,9 +64,19 @@
        int resolution;
     } PCMData;
 
+    typedef struct _WAV_META {
+        pcm_size_t data_start;
+        pcm_size_t data_end;
+        pcm_size_t samples;
+        int channels;
+        int resolution;
+    } WAVMeta;
+
     /* Function declarations */
     PCMData new_PCMData();
+    WAVMeta get_wav_meta(pcm_size_t size, pcm_sample_t data[]);
     PCMData wav_to_pcm(pcm_size_t size, pcm_sample_t data[]);
+    PCMData wav_extract(WAVMeta meta, pcm_sample_t data[], pcm_size_t start, pcm_size_t size);
     void pcm_change_resolution(PCMData *pcm, int new_resolution);
     void pcm_change_size(PCMData *pcm, pcm_size_t new_size);
     void pcm_normalize(PCMData *pcm, float new_amplitude);
@@ -84,14 +98,11 @@
         return pcm;
     }
 
-    /* Parses a WAV file header to get the data, size, resolution, and number of channels, and
-     * returns this data in a PCMData struct.
-     */
-    PCMData wav_to_pcm(pcm_size_t size, pcm_sample_t data[])
+    /* Parses a WAV file header to get the data, size, resolution, and number of channels */
+    WAVMeta get_wav_meta(pcm_size_t size, pcm_sample_t data[])
     {
-        PCMData pcm = new_PCMData();
-
-        if (size > 44 && size <= PCM_PROC_MAX) {
+        WAVMeta meta;
+        if (size > 44) {
             /* Get selected metadata (number of channels and resolution) from a WAV file */
             int channels = 0;
             int resolution = 0;
@@ -140,36 +151,52 @@
                 /* If we have all the data we need, get out of here */
                 if (d_st && d_end && channels && resolution) break;
             }
-           
-            if (d_st > 0 && d_end > d_st && channels && resolution) {
-                pcm.channels = channels;
-                pcm.resolution = resolution;
 
-                pcm_sample_t pcm_data[PCM_PROC_MAX];
-                pcm_index_t new_ix = 0; // Index within new PCM data
-                pcm_index_t dx = d_st; // Index within WAV data, starting at the "data" chunk
-                while (dx < d_end)
+            meta.data_start = d_st;
+            meta.data_end = d_end;
+            meta.channels = channels;
+            meta.resolution = resolution;
+            meta.samples = (d_end - d_st) / (resolution / 8);
+        }
+
+        return meta;
+    }
+
+    PCMData wav_to_pcm(pcm_size_t size, pcm_sample_t data[])
+    {
+        WAVMeta meta = get_wav_meta(size, data);
+        PCMData pcm = wav_extract(meta, data, 0, meta.samples);
+        return pcm;
+    }
+
+    PCMData wav_extract(WAVMeta meta, pcm_sample_t data[], pcm_size_t start, pcm_size_t samples)
+    {
+        pcm_sample_t pcm_data[PCM_PROC_MAX];
+        pcm_index_t ix = 0; // Index within new PCM data
+        pcm_index_t dx = meta.data_start + (start * (meta.resolution / 8)); // Index within WAV data
+        int i;
+        for (i = 0; i < samples; i++)
+        {
+            int ch;
+            for (ch = 0; ch < meta.channels; ch++)
+            {
+                int bn;
+                pcm_sample_t sample = 0;
+                for (bn = 0; bn < (meta.resolution / 8); bn++)
                 {
-                    int ch; /* Channel number */
-                    for (ch = 0; ch < channels; ch++)
-                    {
-                        int bn; /* Byte number */
-                        pcm_sample_t sample = 0;
-                        for (bn = 0; bn < (resolution / 8); bn++)
-                        {
-                            if (dx <= size) { /* Avoid buffer overread */
-                                char b = data[dx++];
-                                sample += (b << (bn * 8));
-                            }
-                        }
-                        pcm_data[new_ix++] = sample;
+                    if (dx <= meta.data_end) { // Avoid buffer overread
+                        char b = data[dx++];
+                        sample += (b << (bn * 8));
                     }
                 }
-               
-                set_pcm_data(&pcm, new_ix, pcm_data);
+                pcm_data[ix++] = sample;
             }
         }
-       
+
+        PCMData pcm = new_PCMData();
+        pcm_change_resolution(&pcm, meta.resolution);
+        pcm.channels = meta.channels;
+        set_pcm_data(&pcm, ix, pcm_data);
         return pcm;
     }
 
