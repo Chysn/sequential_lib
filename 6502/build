@@ -1,0 +1,6 @@
+#!/bin/bash
+
+xa -l toc -o ./sequential_packing.bin ./sequential_packing.asm
+printf "\x00\x18" | cat - ./sequential_packing.bin > ./sequential.prg
+cp ./sequential.prg /Users/jej/personal/vic/sequential
+
