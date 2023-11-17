@@ -11,7 +11,7 @@ DEST    =   $68                 ; Destination packet, 8 bytes
 ; and continue if there's more to do
 Pack:       jsr Prepare         ; Move data from START to SRC
             ldy #0              ; Initialize index and
-            sta DEST            ;   pack byte
+            sty DEST            ;   pack byte
 -loop:      lda SRC,y           ; Get unpacked source byte
             asl                 ; Set carry if high bit set
             ror DEST            ; Move carry into pack byte
