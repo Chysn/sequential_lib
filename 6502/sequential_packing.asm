@@ -1,6 +1,6 @@
 START   =   $f9                 ; Start address, 2 bytes
 END     =   $fb                 ; End address, 2 bytes
-DATA    =   $fd                 ; Data address, 2 bytes
+RESULT  =   $fd                 ; Result address, 2 bytes
 SIZE    =   $ff                 ; Size of packet
 SRC     =   $60                 ; Source packet, 8 bytes
 DEST    =   $68                 ; Destination packet, 8 bytes
@@ -21,7 +21,7 @@ Pack:       jsr Prepare         ; Move data from START to SRC
             cpy #7              ; ,,
             bne loop            ; ,,
             lsr DEST            ; Last shift for bit 7 (always 0)
-            ldy #8              ; Transcribe DEST to DATA
+            ldy #8              ; Transcribe DEST to RESULT
             jsr Xscribe         ; ,,
             bcc Pack            ; Keep going if haven't reached END
             rts
@@ -39,7 +39,7 @@ nx:         sta DEST,y          ; Save to unpacked destination
             iny                 ; Do this for 7 bytes
             cpy #7              ; ,,
             bne loop            ; ,,
-            ldy #7              ; Transcribe DEST to DATA
+            ldy #7              ; Transcribe DEST packet to RESULT
             jsr Xscribe         ; ,,
             bcc Unpack          ; Keep going if haven't reached END
             rts
@@ -55,7 +55,7 @@ Prepare:    ldy #7              ; Copying 8 bytes from start region to the
             rts
 
 ; Transcribe
-; destination packet DEST to data region DATA
+; destination packet DEST to RESULT region
 ; Y is number of bytes to transcribe, meaning
 ;   Y=7 for unpack operation.
 ;   Y=8 for pack operation
@@ -64,7 +64,7 @@ Prepare:    ldy #7              ; Copying 8 bytes from start region to the
 Xscribe:    sty SIZE            ; Keep track of packet size for later
             ldy #0              ; Initialize transcribe index
 -loop:      lda DEST,y          ; Get the packet destination byte
-            sta (DATA),y        ; Transcribe it to the data region
+            sta (RESULT),y      ; Transcribe it to the result region
             inc START           ; Increment start region pointer
             bne ch_end          ;   in order to compare it to the end on a
             inc START+1         ;   byte-by-byte basis
@@ -77,11 +77,11 @@ ch_end:     lda START+1         ; Has the start page reached the end page?
 cont:       iny                 ; Continue by incrementing transcribe index
             cpy SIZE            ; Have we reached the packet size?
             bne loop            ; ,,
-            lda SIZE            ; If end of packet, advance the data region
+            lda SIZE            ; If end of packet, advance the result region
             clc                 ;   pointer by the packet size
-            adc DATA            ;   ,,
-            sta DATA            ;   ,,
+            adc RESULT          ;   ,,
+            sta RESULT          ;   ,,
             bcc xs_r            ;   ,, (return with carry clear, more to do)
-            inc DATA+1          ;   ,,
+            inc RESULT+1        ;   ,,
             clc                 ;   ,, Force clear carry for return
 xs_r:       rts
