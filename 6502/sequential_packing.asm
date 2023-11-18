@@ -2,8 +2,8 @@ START   =   $f9                 ; Start address, 2 bytes
 END     =   $fb                 ; End address, 2 bytes
 RESULT  =   $fd                 ; Result address, 2 bytes
 SIZE    =   $ff                 ; Size of packet
-SRC     =   $60                 ; Source packet, 8 bytes
-DEST    =   $68                 ; Destination packet, 8 bytes
+SRC     =   $0340                 ; Source packet, 8 bytes
+DEST    =   $0348                 ; Destination packet, 8 bytes
 *       =   $1800
 
 ; Pack a single packet
@@ -41,6 +41,7 @@ nx:         sta DEST,y          ; Save to unpacked destination
             bne loop            ; ,,
             ldy #7              ; Transcribe DEST packet to RESULT
             jsr Xscribe         ; ,,
+            jsr IncStart        ; Increment START once more for 8
             bcc Unpack          ; Keep going if haven't reached END
             rts
 
@@ -65,18 +66,13 @@ Xscribe:    sty SIZE            ; Keep track of packet size for later
             ldy #0              ; Initialize transcribe index
 -loop:      lda DEST,y          ; Get the packet destination byte
             sta (RESULT),y      ; Transcribe it to the result region
-            inc START           ; Increment start region pointer
-            bne ch_end          ;   in order to compare it to the end on a
-            inc START+1         ;   byte-by-byte basis
-ch_end:     lda START+1         ; Has the start page reached the end page?
-            cmp END+1           ; If not, continue
-            bcc cont            ; ,,
-            lda START           ; If so, has the start byte reached the end?
-            cmp END             ; ,,
-            bcs xs_r            ; If so, return with carry set (meaning, done)
-cont:       iny                 ; Continue by incrementing transcribe index
+            cpy #7              ; Skip the START increment for the last byte of
+            beq skip_inc        ;   packing operation
+            jsr IncStart        ; Increment start and check for end
+skip_inc:   bcs xs_r            ; ,, Return with carry set if at end
+            iny                 ; Continue by incrementing transcribe index
             cpy SIZE            ; Have we reached the packet size?
-            bne loop            ; ,,
+            bcc loop            ; ,,
             lda SIZE            ; If end of packet, advance the result region
             clc                 ;   pointer by the packet size
             adc RESULT          ;   ,,
@@ -85,3 +81,15 @@ cont:       iny                 ; Continue by incrementing transcribe index
             inc RESULT+1        ;   ,,
             clc                 ;   ,, Force clear carry for return
 xs_r:       rts
+
+; Increment Start
+; Returns with carry set if at (or past) end
+IncStart:   inc START           ; Increment start region pointer
+            bne ch_end          ;   in order to compare it to the end on a
+            inc START+1         ;   byte-by-byte basis
+ch_end:     lda START+1         ; Has the start page reached the end page?
+            cmp END+1           ; If not, continue
+            bcc is_r            ; ,,
+            lda START           ; If so, has the start byte reached the end?
+            cmp END             ; ,,
+is_r:       rts
