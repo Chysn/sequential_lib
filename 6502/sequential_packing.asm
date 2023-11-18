@@ -2,8 +2,8 @@ START   =   $f9                 ; Start address, 2 bytes
 END     =   $fb                 ; End address, 2 bytes
 RESULT  =   $fd                 ; Result address, 2 bytes
 SIZE    =   $ff                 ; Size of packet
-SRC     =   $0340                 ; Source packet, 8 bytes
-DEST    =   $0348                 ; Destination packet, 8 bytes
+SRC     =   $60                 ; Source packet, 8 bytes
+DEST    =   $68                 ; Destination packet, 8 bytes
 *       =   $1800
 
 ; Pack a single packet
@@ -69,11 +69,11 @@ Xscribe:    sty SIZE            ; Keep track of packet size for later
             cpy #7              ; Skip the START increment for the last byte of
             beq skip_inc        ;   packing operation
             jsr IncStart        ; Increment start and check for end
-skip_inc:   bcs xs_r            ; ,, Return with carry set if at end
+            bcs xs_r            ; ,, Return with carry set if at end
             iny                 ; Continue by incrementing transcribe index
             cpy SIZE            ; Have we reached the packet size?
             bcc loop            ; ,,
-            lda SIZE            ; If end of packet, advance the result region
+skip_inc:   lda SIZE            ; If end of packet, advance the result region
             clc                 ;   pointer by the packet size
             adc RESULT          ;   ,,
             sta RESULT          ;   ,,
