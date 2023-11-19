@@ -4,7 +4,6 @@ RESULT  =   $fd                 ; Result address, 2 bytes
 SIZE    =   $ff                 ; Size of packet
 SRC     =   $60                 ; Source packet, 8 bytes
 DEST    =   $68                 ; Destination packet, 8 bytes
-*       =   $1800
 
 ; Pack a single packet
 ; of 7 bytes into 8 bytes
