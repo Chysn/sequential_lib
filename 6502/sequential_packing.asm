@@ -31,7 +31,7 @@ Pack:       jsr Prepare         ; Move data from START to SRC
 Unpack:     jsr Prepare         ; Move data from START to SRC
             ldy #0              ; Initialize index
 -loop:      lda SRC+1,y         ; Get packed source byte
-            ror SRC             ; If it's pack bit is set,
+            ror SRC             ; If its pack bit is set,
             bcc nx              ;   then append it to
             ora #$80            ;   bit 7
 nx:         sta DEST,y          ; Save to unpacked destination
